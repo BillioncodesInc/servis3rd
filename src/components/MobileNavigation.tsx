@@ -12,6 +12,7 @@ import {
   SwapHoriz,
   Payment,
   Menu as MenuIcon,
+  CreditCard,
 } from '@mui/icons-material';
 
 interface MobileNavigationProps {
@@ -26,6 +27,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({ onMenuClick }) => {
     { label: 'Dashboard', value: '/dashboard', icon: <Dashboard /> },
     { label: 'Accounts', value: '/accounts', icon: <AccountBalance /> },
     { label: 'Transfer', value: '/transfer', icon: <SwapHoriz /> },
+    { label: 'Cards', value: '/cards', icon: <CreditCard /> },
     { label: 'Bill Pay', value: '/billpay', icon: <Payment /> },
     { label: 'More', value: 'menu', icon: <MenuIcon /> },
   ];
@@ -36,6 +38,17 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({ onMenuClick }) => {
     } else {
       navigate(newValue);
     }
+  };
+
+  const getPathIndex = (pathname: string): number => {
+    const paths = ['/dashboard', '/accounts', '/transfer', '/cards', '/billpay'];
+    const index = paths.findIndex(path => pathname.startsWith(path));
+    return index === -1 ? 0 : index;
+  };
+
+  const getPathFromIndex = (index: number): string => {
+    const paths = ['/dashboard', '/accounts', '/transfer', '/cards', '/billpay'];
+    return paths[index] || '/dashboard';
   };
 
   return (

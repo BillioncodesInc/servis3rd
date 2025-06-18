@@ -35,6 +35,8 @@ import {
   Brightness4,
   Brightness7,
   PieChart,
+  TrendingUp,
+  CreditCard,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -47,11 +49,13 @@ const menuItems = [
   { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
   { text: 'Accounts', icon: <AccountBalance />, path: '/accounts' },
   { text: 'Transactions', icon: <Receipt />, path: '/transactions' },
-  { text: 'Transfer Funds', icon: <SwapHoriz />, path: '/transfer' },
+  { text: 'Transfer', icon: <SwapHoriz />, path: '/transfer' },
   { text: 'Bill Pay', icon: <Payment />, path: '/billpay' },
-  { text: 'Budget & Insights', icon: <PieChart />, path: '/budget' },
+  { text: 'Cards', icon: <CreditCard />, path: '/cards' },
+  { text: 'Budget & Insights', icon: <TrendingUp />, path: '/budget' },
   { text: 'Mobile Deposit', icon: <CameraAlt />, path: '/mobile-deposit' },
   { text: 'Statements', icon: <Description />, path: '/statements' },
+  { text: 'Profile', icon: <Person />, path: '/profile' },
 ];
 
 const Layout: React.FC = () => {

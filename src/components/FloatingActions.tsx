@@ -7,11 +7,13 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import {
+  Add,
   SwapHoriz,
   Payment,
   CameraAlt,
   AccountBalance,
   Close,
+  CreditCard,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
@@ -24,6 +26,7 @@ const FloatingActions: React.FC = () => {
   const actions = [
     { icon: <SwapHoriz />, name: 'Transfer', path: '/transfer', color: '#2196F3' },
     { icon: <Payment />, name: 'Pay Bills', path: '/billpay', color: '#4CAF50' },
+    { icon: <CreditCard />, name: 'Cards', path: '/cards', color: '#E91E63' },
     { icon: <CameraAlt />, name: 'Deposit', path: '/mobile-deposit', color: '#FF9800' },
     { icon: <AccountBalance />, name: 'Accounts', path: '/accounts', color: '#9C27B0' },
   ];

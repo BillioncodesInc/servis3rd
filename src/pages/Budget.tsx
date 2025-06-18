@@ -33,75 +33,85 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, B
 import { useAuth } from '../contexts/AuthContext';
 import budgetsData from '../data/budgets.json';
 import stateService from '../services/stateService';
-import accountService from '../services/accountService';
+import { Budget } from '../types';
 
-interface BudgetCategory {
-  category: string;
-  limit: number;
-  spent: number;
-  color: string;
-}
-
-interface BudgetData {
-  budgetId: string;
-  userId: string;
-  name: string;
-  period: string;
-  startDate: string;
-  categories: BudgetCategory[];
-  totalLimit: number;
-  totalSpent: number;
-}
-
-const Budget: React.FC = () => {
+const BudgetPage: React.FC = () => {
   const theme = useTheme();
   const { user } = useAuth();
-  const [budget, setBudget] = useState<BudgetData | null>(null);
+  const [budget, setBudget] = useState<Budget | null>(null);
   const [viewMode, setViewMode] = useState<'pie' | 'bar'>('pie');
 
   useEffect(() => {
     if (user) {
-      // Get budget from state or initialize from JSON
-      const state = stateService.getUserState(user.userId);
-      if (state && state.budgets && state.budgets.length > 0) {
-        setBudget(state.budgets[0]);
+      // Get budget from state service
+      const userBudget = stateService.getBudget();
+      if (userBudget) {
+        setBudget(userBudget);
       } else {
-        const userBudget = budgetsData.budgets.find(b => b.userId === user.userId);
-        if (userBudget) {
-          // Calculate actual spending from transactions
-          const transactions = accountService.getUserTransactions(user.userId);
-          const currentMonth = new Date().toISOString().slice(0, 7);
-          
-          const updatedCategories = userBudget.categories.map(cat => {
-            const categorySpending = transactions
-              .filter(t => 
-                t.type === 'debit' && 
-                t.category === cat.category &&
-                t.date.slice(0, 7) === currentMonth
-              )
-              .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-            
-            return {
-              ...cat,
-              spent: categorySpending
-            };
-          });
-          
-          const totalSpent = updatedCategories.reduce((sum, cat) => sum + cat.spent, 0);
-          
-          const updatedBudget = {
-            ...userBudget,
-            categories: updatedCategories,
-            totalSpent,
-            startDate: currentMonth + '-01'
+        // Load from JSON if not in state
+        const budgetData = budgetsData.budgets.find(b => b.userId === user.userId);
+        if (budgetData) {
+          const formattedBudget: Budget = {
+            userId: budgetData.userId,
+            categories: budgetData.categories.reduce((acc: any, cat: any) => {
+              acc[cat.category] = {
+                limit: cat.limit,
+                spent: cat.spent,
+                icon: cat.icon || '',
+                color: cat.color
+              };
+              return acc;
+            }, {}),
+            monthlyLimit: budgetData.totalLimit,
+            alerts: true
           };
+          setBudget(formattedBudget);
           
-          setBudget(updatedBudget);
-          stateService.saveUserState(user.userId, { budgets: [updatedBudget] });
+          // Calculate actual spending from transactions
+          calculateCategorySpending(formattedBudget);
         }
       }
     }
   }, [user]);
+
+  const calculateCategorySpending = (currentBudget?: Budget) => {
+    const budgetToUpdate = currentBudget || budget;
+    if (user && budgetToUpdate) {
+      const userTransactions = stateService.getTransactions();
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      
+      const monthlyTransactions = userTransactions.filter(t => {
+        const transDate = new Date(t.date);
+        return transDate.getMonth() === currentMonth && 
+               transDate.getFullYear() === currentYear &&
+               t.type === 'debit';
+      });
+
+      // Update spending for each category
+      const updatedCategories = { ...budgetToUpdate.categories };
+      
+      // Reset all spent amounts
+      Object.keys(updatedCategories).forEach(category => {
+        updatedCategories[category].spent = 0;
+      });
+      
+      // Calculate spending per category
+      monthlyTransactions.forEach(trans => {
+        if (updatedCategories[trans.category]) {
+          updatedCategories[trans.category].spent += Math.abs(trans.amount);
+        }
+      });
+      
+      const updatedBudget: Budget = {
+        ...budgetToUpdate,
+        categories: updatedCategories
+      };
+      
+      setBudget(updatedBudget);
+      stateService.updateBudget(updatedBudget);
+    }
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -120,11 +130,17 @@ const Budget: React.FC = () => {
     return 'success';
   };
 
+  const getTotalSpent = () => {
+    if (!budget) return 0;
+    return Object.values(budget.categories).reduce((sum, cat) => sum + cat.spent, 0);
+  };
+
   const getInsights = () => {
     if (!budget) return [];
     
     const insights = [];
-    const overallPercentage = getPercentage(budget.totalSpent, budget.totalLimit);
+    const totalSpent = getTotalSpent();
+    const overallPercentage = getPercentage(totalSpent, budget.monthlyLimit);
     
     if (overallPercentage < 50) {
       insights.push({
@@ -140,12 +156,12 @@ const Budget: React.FC = () => {
       });
     }
 
-    budget.categories.forEach(cat => {
+    Object.entries(budget.categories).forEach(([catName, cat]) => {
       const percentage = getPercentage(cat.spent, cat.limit);
       if (percentage > 90) {
         insights.push({
           type: 'error',
-          message: `You're close to exceeding your ${cat.category} budget (${percentage}% used).`,
+          message: `You're close to exceeding your ${catName} budget (${percentage}% used).`,
           icon: <TrendingUp />,
         });
       }
@@ -176,14 +192,16 @@ const Budget: React.FC = () => {
     );
   }
 
-  const pieData = budget.categories.map(cat => ({
-    name: cat.category,
+  const totalSpent = getTotalSpent();
+  
+  const pieData = Object.entries(budget.categories).map(([name, cat]) => ({
+    name,
     value: cat.spent,
     color: cat.color,
   }));
 
-  const barData = budget.categories.map(cat => ({
-    category: cat.category,
+  const barData = Object.entries(budget.categories).map(([name, cat]) => ({
+    category: name,
     budget: cat.limit,
     spent: cat.spent,
     remaining: Math.max(0, cat.limit - cat.spent),
@@ -233,15 +251,15 @@ const Budget: React.FC = () => {
                     Monthly Budget Overview
                   </Typography>
                   <Typography variant="h3" sx={{ my: 2 }}>
-                    {formatCurrency(budget.totalSpent)}
+                    {formatCurrency(totalSpent)}
                   </Typography>
                   <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    of {formatCurrency(budget.totalLimit)} budget
+                    of {formatCurrency(budget.monthlyLimit)} budget
                   </Typography>
                   <Box sx={{ mt: 2 }}>
                     <LinearProgress
                       variant="determinate"
-                      value={getPercentage(budget.totalSpent, budget.totalLimit)}
+                      value={getPercentage(totalSpent, budget.monthlyLimit)}
                       sx={{
                         height: 10,
                         borderRadius: 5,
@@ -252,7 +270,7 @@ const Budget: React.FC = () => {
                       }}
                     />
                     <Typography variant="body2" sx={{ mt: 1 }}>
-                      {getPercentage(budget.totalSpent, budget.totalLimit)}% used
+                      {getPercentage(totalSpent, budget.monthlyLimit)}% used
                     </Typography>
                   </Box>
                 </CardContent>
@@ -362,13 +380,13 @@ const Budget: React.FC = () => {
                   </Grid>
                   <Grid item xs={12} md={4}>
                     <List>
-                      {budget.categories.map((category, index) => {
+                      {Object.entries(budget.categories).map(([catName, category], index) => {
                         const percentage = getPercentage(category.spent, category.limit);
                         return (
-                          <Fade in timeout={300 + index * 100} key={category.category}>
+                          <Fade in timeout={300 + index * 100} key={catName}>
                             <Paper sx={{ mb: 2, p: 2 }}>
                               <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                                <Typography variant="subtitle2">{category.category}</Typography>
+                                <Typography variant="subtitle2">{catName}</Typography>
                                 <Chip
                                   label={`${percentage}%`}
                                   size="small"
@@ -405,4 +423,4 @@ const Budget: React.FC = () => {
   );
 };
 
-export default Budget; 
+export default BudgetPage; 

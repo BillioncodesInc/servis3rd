@@ -102,4 +102,49 @@ export interface Bill {
   status: 'pending' | 'scheduled' | 'paid';
   recurring: boolean;
   frequency?: 'monthly' | 'quarterly' | 'yearly';
+}
+
+export interface Budget {
+  userId: string;
+  categories: {
+    [key: string]: {
+      limit: number;
+      spent: number;
+      icon: string;
+      color: string;
+    };
+  };
+  monthlyLimit: number;
+  alerts: boolean;
+}
+
+export interface Card {
+  id: string;
+  userId: string;
+  accountId: string;
+  cardNumber: string;
+  cardType: 'debit' | 'credit';
+  cardName: string;
+  expiryDate: string;
+  cvv: string;
+  status: 'active' | 'frozen' | 'blocked';
+  limit: number;
+  spent: number;
+  pin?: string;
+  contactless: boolean;
+  onlineTransactions: boolean;
+  internationalTransactions: boolean;
+  atmWithdrawals: boolean;
+}
+
+export interface CardTransaction {
+  id: string;
+  cardId: string;
+  date: string;
+  description: string;
+  amount: number;
+  type: 'purchase' | 'withdrawal' | 'refund';
+  merchant?: string;
+  category?: string;
+  location?: string;
 } 

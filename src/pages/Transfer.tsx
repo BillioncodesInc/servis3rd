@@ -115,7 +115,7 @@ const Transfer: React.FC = () => {
 
   const confirmTransfer = () => {
     const transferAmount = parseFloat(amount);
-    const success = accountService.processTransfer(
+    const success = accountService.transferFunds(
       fromAccount,
       toAccount,
       transferAmount,

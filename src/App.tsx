@@ -15,6 +15,7 @@ import MobileDeposit from './pages/MobileDeposit';
 import Statements from './pages/Statements';
 import Profile from './pages/Profile';
 import Budget from './pages/Budget';
+import Cards from './pages/Cards';
 import Layout from './components/Layout';
 
 function App() {
@@ -26,14 +27,7 @@ function App() {
           <Router>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route
-              path="/"
-              element={
-                <PrivateRoute>
-                  <Layout />
-                </PrivateRoute>
-              }
-            >
+            <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="accounts" element={<Accounts />} />
@@ -44,6 +38,7 @@ function App() {
               <Route path="statements" element={<Statements />} />
               <Route path="profile" element={<Profile />} />
               <Route path="budget" element={<Budget />} />
+              <Route path="cards" element={<Cards />} />
             </Route>
           </Routes>
         </Router>
