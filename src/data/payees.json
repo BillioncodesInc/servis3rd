@@ -1,0 +1,92 @@
+{
+  "payees": [
+    {
+      "payeeId": "PAY001",
+      "userId": "USR001",
+      "name": "Alabama Power",
+      "accountNumber": "123456789",
+      "category": "Utilities",
+      "isFavorite": true,
+      "lastPaymentDate": "2024-01-08",
+      "lastPaymentAmount": 125.00,
+      "isActive": true
+    },
+    {
+      "payeeId": "PAY002",
+      "userId": "USR001",
+      "name": "Spectrum Internet",
+      "accountNumber": "987654321",
+      "category": "Utilities",
+      "isFavorite": true,
+      "lastPaymentDate": "2024-01-05",
+      "lastPaymentAmount": 79.99,
+      "isActive": true
+    },
+    {
+      "payeeId": "PAY003",
+      "userId": "USR001",
+      "name": "State Farm Insurance",
+      "accountNumber": "INS-456789",
+      "category": "Insurance",
+      "isFavorite": false,
+      "lastPaymentDate": "2023-12-15",
+      "lastPaymentAmount": 150.00,
+      "isActive": true
+    },
+    {
+      "payeeId": "PAY004",
+      "userId": "USR002",
+      "name": "Office Lease - Downtown Plaza",
+      "accountNumber": "LEASE-001",
+      "category": "Rent",
+      "isFavorite": true,
+      "lastPaymentDate": "2024-01-01",
+      "lastPaymentAmount": 3500.00,
+      "isActive": true
+    },
+    {
+      "payeeId": "PAY005",
+      "userId": "USR002",
+      "name": "Business Insurance Co",
+      "accountNumber": "BIZ-789456",
+      "category": "Insurance",
+      "isFavorite": true,
+      "lastPaymentDate": "2024-01-01",
+      "lastPaymentAmount": 850.00,
+      "isActive": true
+    },
+    {
+      "payeeId": "PAY006",
+      "userId": "USR003",
+      "name": "Apartment Complex",
+      "accountNumber": "APT-789",
+      "category": "Rent",
+      "isFavorite": true,
+      "lastPaymentDate": "2024-01-01",
+      "lastPaymentAmount": 1200.00,
+      "isActive": true
+    },
+    {
+      "payeeId": "PAY007",
+      "userId": "USR003",
+      "name": "T-Mobile",
+      "accountNumber": "555-0789",
+      "category": "Phone",
+      "isFavorite": false,
+      "lastPaymentDate": "2024-01-10",
+      "lastPaymentAmount": 85.00,
+      "isActive": true
+    },
+    {
+      "payeeId": "PAY008",
+      "userId": "USR004",
+      "name": "Mortgage Company",
+      "accountNumber": "MTG-123456",
+      "category": "Mortgage",
+      "isFavorite": true,
+      "lastPaymentDate": "2024-01-01",
+      "lastPaymentAmount": 1200.00,
+      "isActive": true
+    }
+  ]
+} 

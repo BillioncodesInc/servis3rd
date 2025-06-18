@@ -1,0 +1,174 @@
+{
+  "budgets": [
+    {
+      "budgetId": "BUD001",
+      "userId": "USR001",
+      "name": "Monthly Budget",
+      "period": "monthly",
+      "startDate": "2024-01-01",
+      "categories": [
+        {
+          "category": "Food & Dining",
+          "limit": 600,
+          "spent": 425.50,
+          "color": "#FF6B6B"
+        },
+        {
+          "category": "Shopping",
+          "limit": 400,
+          "spent": 312.75,
+          "color": "#4ECDC4"
+        },
+        {
+          "category": "Transportation",
+          "limit": 200,
+          "spent": 185.00,
+          "color": "#45B7D1"
+        },
+        {
+          "category": "Entertainment",
+          "limit": 150,
+          "spent": 89.99,
+          "color": "#96CEB4"
+        },
+        {
+          "category": "Bills & Utilities",
+          "limit": 800,
+          "spent": 750.00,
+          "color": "#FECA57"
+        },
+        {
+          "category": "Healthcare",
+          "limit": 200,
+          "spent": 45.00,
+          "color": "#FF9FF3"
+        }
+      ],
+      "totalLimit": 2350,
+      "totalSpent": 1808.24
+    },
+    {
+      "budgetId": "BUD002",
+      "userId": "USR002",
+      "name": "Business Budget",
+      "period": "monthly",
+      "startDate": "2024-01-01",
+      "categories": [
+        {
+          "category": "Office Supplies",
+          "limit": 1000,
+          "spent": 856.32,
+          "color": "#FF6B6B"
+        },
+        {
+          "category": "Marketing",
+          "limit": 2500,
+          "spent": 1890.50,
+          "color": "#4ECDC4"
+        },
+        {
+          "category": "Travel",
+          "limit": 1500,
+          "spent": 1245.00,
+          "color": "#45B7D1"
+        },
+        {
+          "category": "Software",
+          "limit": 800,
+          "spent": 650.00,
+          "color": "#96CEB4"
+        },
+        {
+          "category": "Utilities",
+          "limit": 500,
+          "spent": 425.00,
+          "color": "#FECA57"
+        }
+      ],
+      "totalLimit": 6300,
+      "totalSpent": 5066.82
+    },
+    {
+      "budgetId": "BUD003",
+      "userId": "USR003",
+      "name": "Personal Budget",
+      "period": "monthly",
+      "startDate": "2024-01-01",
+      "categories": [
+        {
+          "category": "Food & Dining",
+          "limit": 500,
+          "spent": 380.25,
+          "color": "#FF6B6B"
+        },
+        {
+          "category": "Shopping",
+          "limit": 300,
+          "spent": 225.50,
+          "color": "#4ECDC4"
+        },
+        {
+          "category": "Transportation",
+          "limit": 150,
+          "spent": 125.00,
+          "color": "#45B7D1"
+        },
+        {
+          "category": "Entertainment",
+          "limit": 200,
+          "spent": 150.00,
+          "color": "#96CEB4"
+        },
+        {
+          "category": "Bills & Utilities",
+          "limit": 600,
+          "spent": 580.00,
+          "color": "#FECA57"
+        }
+      ],
+      "totalLimit": 1750,
+      "totalSpent": 1460.75
+    },
+    {
+      "budgetId": "BUD004",
+      "userId": "USR004",
+      "name": "Monthly Budget",
+      "period": "monthly",
+      "startDate": "2024-01-01",
+      "categories": [
+        {
+          "category": "Food & Dining",
+          "limit": 450,
+          "spent": 325.00,
+          "color": "#FF6B6B"
+        },
+        {
+          "category": "Shopping",
+          "limit": 250,
+          "spent": 189.99,
+          "color": "#4ECDC4"
+        },
+        {
+          "category": "Transportation",
+          "limit": 100,
+          "spent": 85.00,
+          "color": "#45B7D1"
+        },
+        {
+          "category": "Entertainment",
+          "limit": 100,
+          "spent": 45.00,
+          "color": "#96CEB4"
+        },
+        {
+          "category": "Bills & Utilities",
+          "limit": 500,
+          "spent": 475.00,
+          "color": "#FECA57"
+        }
+      ],
+      "totalLimit": 1400,
+      "totalSpent": 1119.99
+    }
+  ]
+} 
