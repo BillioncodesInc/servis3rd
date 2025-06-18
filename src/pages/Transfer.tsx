@@ -32,6 +32,7 @@ import {
   History,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
 import { Account, Transaction } from '../types';
 import accountService from '../services/accountService';
 
@@ -52,13 +53,13 @@ function TabPanel(props: TabPanelProps) {
 
 const Transfer: React.FC = () => {
   const { user } = useAuth();
+  const { showNotification } = useNotification();
   const [tabValue, setTabValue] = useState(0);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [fromAccount, setFromAccount] = useState('');
   const [toAccount, setToAccount] = useState('');
   const [amount, setAmount] = useState('');
   const [memo, setMemo] = useState('');
-  const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState('');
   const [recentTransfers, setRecentTransfers] = useState<Transaction[]>([]);
   const [confirmDialog, setConfirmDialog] = useState(false);
@@ -123,7 +124,7 @@ const Transfer: React.FC = () => {
 
     if (success) {
       setConfirmDialog(false);
-      setShowSuccess(true);
+      showNotification('Transfer completed successfully!', 'success');
       setFromAccount('');
       setToAccount('');
       setAmount('');
@@ -138,12 +139,8 @@ const Transfer: React.FC = () => {
         const transfers = allTransactions.filter(t => t.category === 'Transfer');
         setRecentTransfers(transfers.slice(0, 5));
       }
-      
-      setTimeout(() => {
-        setShowSuccess(false);
-      }, 5000);
     } else {
-      setError('Transfer failed. Please try again.');
+      showNotification('Transfer failed. Please try again.', 'error');
       setConfirmDialog(false);
     }
   };
@@ -164,11 +161,7 @@ const Transfer: React.FC = () => {
         Move money between your accounts instantly
       </Typography>
 
-      {showSuccess && (
-        <Alert severity="success" sx={{ mb: 3 }}>
-          Transfer completed successfully! The funds have been moved between your accounts.
-        </Alert>
-      )}
+
 
       {error && (
         <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>

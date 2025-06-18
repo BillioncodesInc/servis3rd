@@ -32,6 +32,8 @@ import {
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
 import { useAuth } from '../contexts/AuthContext';
 import budgetsData from '../data/budgets.json';
+import stateService from '../services/stateService';
+import accountService from '../services/accountService';
 
 interface BudgetCategory {
   category: string;
@@ -59,8 +61,45 @@ const Budget: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      const userBudget = budgetsData.budgets.find(b => b.userId === user.userId);
-      setBudget(userBudget || null);
+      // Get budget from state or initialize from JSON
+      const state = stateService.getUserState(user.userId);
+      if (state && state.budgets && state.budgets.length > 0) {
+        setBudget(state.budgets[0]);
+      } else {
+        const userBudget = budgetsData.budgets.find(b => b.userId === user.userId);
+        if (userBudget) {
+          // Calculate actual spending from transactions
+          const transactions = accountService.getUserTransactions(user.userId);
+          const currentMonth = new Date().toISOString().slice(0, 7);
+          
+          const updatedCategories = userBudget.categories.map(cat => {
+            const categorySpending = transactions
+              .filter(t => 
+                t.type === 'debit' && 
+                t.category === cat.category &&
+                t.date.slice(0, 7) === currentMonth
+              )
+              .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+            
+            return {
+              ...cat,
+              spent: categorySpending
+            };
+          });
+          
+          const totalSpent = updatedCategories.reduce((sum, cat) => sum + cat.spent, 0);
+          
+          const updatedBudget = {
+            ...userBudget,
+            categories: updatedCategories,
+            totalSpent,
+            startDate: currentMonth + '-01'
+          };
+          
+          setBudget(updatedBudget);
+          stateService.saveUserState(user.userId, { budgets: [updatedBudget] });
+        }
+      }
     }
   }, [user]);
 

@@ -68,18 +68,42 @@ const Dashboard: React.FC = () => {
     }
   }, [user]);
 
-  // Generate chart data
+  // Generate chart data from actual transactions
   const generateChartData = () => {
     const data = [];
     const today = new Date();
+    
     for (let i = 6; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
+
+      
+      // Calculate balance up to this date
+      const balanceAtDate = accounts.reduce((total, account) => {
+        // Get transactions up to this date
+        const accountTransactions = recentTransactions.filter(t => 
+          t.accountId === account.accountId && 
+          new Date(t.date) <= date
+        );
+        
+        // Calculate balance based on transactions
+        let accountBalance = account.balance;
+        accountTransactions.forEach(t => {
+          if (new Date(t.date) > date) {
+            // Reverse the transaction
+            accountBalance -= t.amount;
+          }
+        });
+        
+        return total + accountBalance;
+      }, 0);
+      
       data.push({
         date: format(date, 'MMM dd'),
-        balance: totalBalance + Math.random() * 1000 - 500,
+        balance: balanceAtDate,
       });
     }
+    
     return data;
   };
 

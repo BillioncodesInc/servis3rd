@@ -56,6 +56,8 @@ export interface Account {
   nextPaymentAmount?: number;
   minimumPayment?: number;
   paymentDueDate?: string;
+  lastActivityDate?: string;
+  lastInterestDate?: string;
 }
 
 export interface Transaction {

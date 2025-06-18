@@ -1,18 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Grid,
+  Typography,
   Card,
   CardContent,
-  Typography,
+  Grid,
   Chip,
-  IconButton,
   Button,
-  Divider,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  IconButton,
   Table,
   TableBody,
   TableCell,
@@ -20,36 +15,39 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Tabs,
-  Tab,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Tooltip,
+  LinearProgress,
+  Fade,
+  Grow,
+  useTheme,
+  Divider,
   List,
   ListItem,
   ListItemText,
   ListItemIcon,
   Alert,
-  LinearProgress,
-  Tooltip,
-  Fade,
-  Grow,
 } from '@mui/material';
 import {
   AccountBalance,
   CreditCard,
   Savings,
-  AccountBalanceWallet,
-  MoreVert,
+  MonetizationOn,
   TrendingUp,
-  Close,
-  Info,
   History,
-  Download,
-  Print,
   ContentCopy,
+  Info,
   CheckCircle,
-  TrendingDown,
+  Warning,
   CalendarToday,
-  AttachMoney,
-  Description,
+  AccountBalanceWallet,
+  Speed,
+  Security,
+  Visibility,
+  VisibilityOff,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { Account, Transaction } from '../types';
@@ -57,30 +55,16 @@ import accountService from '../services/accountService';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
-  return (
-    <div hidden={value !== index} {...other}>
-      {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
-    </div>
-  );
-}
-
 const Accounts: React.FC = () => {
+  const theme = useTheme();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
-  const [accountTransactions, setAccountTransactions] = useState<Transaction[]>([]);
-  const [detailsDialog, setDetailsDialog] = useState(false);
-  const [tabValue, setTabValue] = useState(0);
+  const [showDetails, setShowDetails] = useState(false);
+  const [showAccountNumbers, setShowAccountNumbers] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -99,567 +83,485 @@ const Accounts: React.FC = () => {
   const getAccountIcon = (type: string) => {
     switch (type) {
       case 'checking':
-        return <AccountBalance fontSize="large" />;
+        return <AccountBalanceWallet />;
       case 'savings':
-        return <Savings fontSize="large" />;
+        return <Savings />;
       case 'credit':
-        return <CreditCard fontSize="large" />;
+        return <CreditCard />;
       case 'loan':
-        return <AccountBalanceWallet fontSize="large" />;
+        return <MonetizationOn />;
       default:
-        return <AccountBalance fontSize="large" />;
+        return <AccountBalance />;
     }
   };
 
   const getAccountColor = (type: string) => {
     switch (type) {
       case 'checking':
-        return 'primary';
+        return '#2196F3';
       case 'savings':
-        return 'success';
+        return '#4CAF50';
       case 'credit':
-        return 'warning';
+        return '#FF9800';
       case 'loan':
-        return 'error';
+        return '#F44336';
       default:
-        return 'primary';
+        return '#757575';
     }
   };
 
   const handleViewDetails = (account: Account) => {
     setSelectedAccount(account);
-    const transactions = accountService.getAccountTransactions(account.accountId);
-    setAccountTransactions(transactions.slice(0, 10)); // Get last 10 transactions
-    setDetailsDialog(true);
-    setTabValue(0);
+    // Get recent transactions for this account
+    const transactions = accountService.getUserTransactions(user!.userId);
+    const accountTransactions = transactions
+      .filter(t => t.accountId === account.accountId)
+      .slice(0, 5);
+    setRecentTransactions(accountTransactions);
+    setShowDetails(true);
   };
 
-  const handleViewTransactions = (account: Account) => {
-    // Navigate to transactions page with account filter
-    navigate('/transactions', { state: { accountId: account.accountId } });
-  };
-
-  const handleCopyToClipboard = (text: string, field: string) => {
+  const handleCopyToClipboard = (text: string, type: string) => {
     navigator.clipboard.writeText(text);
-    setCopied(field);
+    setCopied(type);
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const calculateTotalBalance = () => {
-    return accounts.reduce((total, account) => {
-      if (account.accountType === 'credit' || account.accountType === 'loan') {
-        return total - account.balance;
-      }
-      return total + account.balance;
-    }, 0);
+  const maskAccountNumber = (accountNumber: string) => {
+    if (!accountNumber) return '';
+    const last4 = accountNumber.slice(-4);
+    return `****-****-****-${last4}`;
   };
 
-  const calculateMonthlyChange = () => {
-    // Simulated monthly change
-    return Math.random() * 1000 - 500;
+  const calculateAccountAge = (openDate: string) => {
+    const open = new Date(openDate);
+    const now = new Date();
+    const years = now.getFullYear() - open.getFullYear();
+    const months = now.getMonth() - open.getMonth();
+    
+    if (years > 0) {
+      return `${years} year${years > 1 ? 's' : ''} ${months > 0 ? `${months} month${months > 1 ? 's' : ''}` : ''}`;
+    }
+    return `${months} month${months > 1 ? 's' : ''}`;
   };
+
+  const totalAssets = accounts
+    .filter(acc => acc.accountType === 'checking' || acc.accountType === 'savings')
+    .reduce((sum, acc) => sum + acc.balance, 0);
+
+  const totalDebt = accounts
+    .filter(acc => acc.accountType === 'credit' || acc.accountType === 'loan')
+    .reduce((sum, acc) => sum + Math.abs(acc.balance), 0);
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom>
-        My Accounts
-      </Typography>
-      <Typography variant="body1" color="text.secondary" paragraph>
-        Manage and view all your accounts in one place
-      </Typography>
+    <Fade in timeout={500}>
+      <Box>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+          <Box>
+            <Typography variant="h4" gutterBottom>
+              My Accounts
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Manage and view all your accounts in one place
+            </Typography>
+          </Box>
+          <Tooltip title={showAccountNumbers ? "Hide account numbers" : "Show account numbers"}>
+            <IconButton onClick={() => setShowAccountNumbers(!showAccountNumbers)} color="primary">
+              {showAccountNumbers ? <VisibilityOff /> : <Visibility />}
+            </IconButton>
+          </Tooltip>
+        </Box>
 
-      {/* Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={4}>
-          <Grow in timeout={300}>
-            <Card sx={{ 
-              background: 'linear-gradient(135deg, #003366 0%, #004080 100%)',
-              color: 'white'
-            }}>
-              <CardContent>
-                <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Box>
-                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                      Total Net Worth
-                    </Typography>
-                    <Typography variant="h4" sx={{ my: 1 }}>
-                      {formatCurrency(calculateTotalBalance())}
-                    </Typography>
-                    <Box display="flex" alignItems="center" gap={0.5}>
-                      <TrendingUp fontSize="small" />
-                      <Typography variant="body2">
-                        +{formatCurrency(Math.abs(calculateMonthlyChange()))} this month
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <AttachMoney sx={{ fontSize: 48, opacity: 0.3 }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grow>
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <Grow in timeout={500}>
-            <Card>
-              <CardContent>
-                <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Accounts
-                    </Typography>
-                    <Typography variant="h4" sx={{ my: 1 }}>
-                      {accounts.length}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {accounts.filter(a => a.status === 'active').length} active
-                    </Typography>
-                  </Box>
-                  <AccountBalance sx={{ fontSize: 48, color: 'primary.main', opacity: 0.3 }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grow>
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <Grow in timeout={700}>
-            <Card>
-              <CardContent>
-                <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Recent Activity
-                    </Typography>
-                    <Typography variant="h4" sx={{ my: 1 }}>
-                      24
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Transactions this week
-                    </Typography>
-                  </Box>
-                  <History sx={{ fontSize: 48, color: 'secondary.main', opacity: 0.3 }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grow>
-        </Grid>
-      </Grid>
-
-      {/* Account Cards */}
-      <Grid container spacing={3}>
-        {accounts.map((account, index) => (
-          <Grid item xs={12} md={6} key={account.accountId}>
-            <Fade in timeout={300 + index * 100}>
-              <Card 
-                sx={{ 
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: 4,
-                  }
-                }}
-              >
+        {/* Summary Cards */}
+        <Grid container spacing={3} mb={3}>
+          <Grid item xs={12} sm={4}>
+            <Grow in timeout={300}>
+              <Card sx={{ 
+                background: theme.palette.mode === 'dark'
+                  ? 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)'
+                  : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white'
+              }}>
                 <CardContent>
-                  <Box display="flex" justifyContent="space-between" alignItems="flex-start">
-                    <Box display="flex" alignItems="center">
-                      <Box
-                        sx={{
-                          p: 2,
-                          borderRadius: 2,
-                          bgcolor: `${getAccountColor(account.accountType)}.light`,
-                          color: `${getAccountColor(account.accountType)}.main`,
-                          mr: 2,
-                        }}
-                      >
-                        {getAccountIcon(account.accountType)}
-                      </Box>
-                      <Box>
-                        <Typography variant="h6">{account.accountName}</Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          ****{account.accountNumber.slice(-4)}
-                        </Typography>
-                        <Chip
-                          label={account.accountType.toUpperCase()}
-                          size="small"
-                          color={getAccountColor(account.accountType) as any}
-                          sx={{ mt: 1 }}
-                        />
-                      </Box>
-                    </Box>
-                    <IconButton>
-                      <MoreVert />
-                    </IconButton>
-                  </Box>
-
-                  <Divider sx={{ my: 2 }} />
-
-                  <Grid container spacing={2}>
-                    <Grid item xs={6}>
-                      <Typography variant="body2" color="text.secondary">
-                        Current Balance
+                  <Box display="flex" alignItems="center" justifyContent="space-between">
+                    <Box>
+                      <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                        Total Assets
                       </Typography>
-                      <Typography variant="h5" color={account.balance >= 0 ? 'inherit' : 'error'}>
-                        {formatCurrency(account.balance)}
+                      <Typography variant="h4" sx={{ fontWeight: 600, my: 1 }}>
+                        {formatCurrency(totalAssets)}
                       </Typography>
-                    </Grid>
-                    {account.availableBalance !== undefined && (
-                      <Grid item xs={6}>
-                        <Typography variant="body2" color="text.secondary">
-                          Available Balance
-                        </Typography>
-                        <Typography variant="h5">
-                          {formatCurrency(account.availableBalance)}
-                        </Typography>
-                      </Grid>
-                    )}
-                  </Grid>
-
-                  {account.creditLimit && (
-                    <Box mt={2}>
-                      <Box display="flex" justifyContent="space-between" mb={1}>
-                        <Typography variant="body2" color="text.secondary">
-                          Credit Utilization
-                        </Typography>
-                        <Typography variant="body2">
-                          {Math.round((account.balance / account.creditLimit) * 100)}%
-                        </Typography>
-                      </Box>
-                      <LinearProgress 
-                        variant="determinate" 
-                        value={(account.balance / account.creditLimit) * 100}
-                        sx={{ height: 8, borderRadius: 4 }}
+                      <Chip
+                        icon={<TrendingUp />}
+                        label="+5.2% this month"
+                        size="small"
+                        sx={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white' }}
                       />
                     </Box>
-                  )}
-
-                  {account.interestRate && (
-                    <Box mt={2} display="flex" alignItems="center">
-                      <TrendingUp fontSize="small" color="success" sx={{ mr: 1 }} />
-                      <Typography variant="body2">
-                        {account.interestRate}% APY
-                      </Typography>
-                    </Box>
-                  )}
-
-                  <Box mt={3} display="flex" gap={1}>
-                    <Button 
-                      variant="outlined" 
-                      size="small" 
-                      fullWidth
-                      onClick={() => handleViewDetails(account)}
-                    >
-                      View Details
-                    </Button>
-                    <Button 
-                      variant="contained" 
-                      size="small" 
-                      fullWidth
-                      onClick={() => handleViewTransactions(account)}
-                    >
-                      Transactions
-                    </Button>
+                    <AccountBalanceWallet sx={{ fontSize: 48, opacity: 0.7 }} />
                   </Box>
                 </CardContent>
               </Card>
-            </Fade>
+            </Grow>
           </Grid>
-        ))}
 
-        <Grid item xs={12} md={6}>
-          <Card sx={{ 
-            height: '100%', 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            minHeight: 200,
-            border: '2px dashed',
-            borderColor: 'divider',
-            bgcolor: 'background.default',
-          }}>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <AccountBalance sx={{ fontSize: 48, color: 'action.disabled', mb: 2 }} />
-              <Typography variant="h6" gutterBottom>
-                Open a New Account
-              </Typography>
-              <Typography variant="body2" color="text.secondary" paragraph>
-                Expand your financial portfolio with our range of account options
-              </Typography>
-              <Button variant="contained" color="primary">
-                Get Started
-              </Button>
-            </CardContent>
-          </Card>
+          <Grid item xs={12} sm={4}>
+            <Grow in timeout={400}>
+              <Card sx={{ 
+                background: theme.palette.mode === 'dark'
+                  ? 'linear-gradient(135deg, #c31432 0%, #240b36 100%)'
+                  : 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                color: 'white'
+              }}>
+                <CardContent>
+                  <Box display="flex" alignItems="center" justifyContent="space-between">
+                    <Box>
+                      <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                        Total Debt
+                      </Typography>
+                      <Typography variant="h4" sx={{ fontWeight: 600, my: 1 }}>
+                        {formatCurrency(totalDebt)}
+                      </Typography>
+                      <Chip
+                        icon={<Warning />}
+                        label="2 payments due"
+                        size="small"
+                        sx={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white' }}
+                      />
+                    </Box>
+                    <CreditCard sx={{ fontSize: 48, opacity: 0.7 }} />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grow>
+          </Grid>
+
+          <Grid item xs={12} sm={4}>
+            <Grow in timeout={500}>
+              <Card sx={{ 
+                background: theme.palette.mode === 'dark'
+                  ? 'linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)'
+                  : 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                color: 'white'
+              }}>
+                <CardContent>
+                  <Box display="flex" alignItems="center" justifyContent="space-between">
+                    <Box>
+                      <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                        Net Worth
+                      </Typography>
+                      <Typography variant="h4" sx={{ fontWeight: 600, my: 1 }}>
+                        {formatCurrency(totalAssets - totalDebt)}
+                      </Typography>
+                      <Chip
+                        icon={<Speed />}
+                        label="Good standing"
+                        size="small"
+                        sx={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white' }}
+                      />
+                    </Box>
+                    <TrendingUp sx={{ fontSize: 48, opacity: 0.7 }} />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grow>
+          </Grid>
         </Grid>
-      </Grid>
 
-      {/* Account Details Dialog */}
-      <Dialog 
-        open={detailsDialog} 
-        onClose={() => setDetailsDialog(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6">
-              {selectedAccount?.accountName} Details
-            </Typography>
-            <IconButton onClick={() => setDetailsDialog(false)}>
-              <Close />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent dividers>
+        {/* Accounts List */}
+        <Grid container spacing={3}>
+          {accounts.map((account, index) => (
+            <Grid item xs={12} md={6} key={account.accountId}>
+              <Grow in timeout={600 + index * 100}>
+                <Card 
+                  sx={{ 
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: theme.shadows[8],
+                    }
+                  }}
+                  onClick={() => handleViewDetails(account)}
+                >
+                  <CardContent>
+                    <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                      <Box display="flex" alignItems="center" gap={2}>
+                        <Box
+                          sx={{
+                            width: 56,
+                            height: 56,
+                            borderRadius: 2,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: `${getAccountColor(account.accountType)}20`,
+                            color: getAccountColor(account.accountType),
+                          }}
+                        >
+                          {getAccountIcon(account.accountType)}
+                        </Box>
+                        <Box>
+                          <Typography variant="h6" gutterBottom>
+                            {account.accountName}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {showAccountNumbers ? account.accountNumber : maskAccountNumber(account.accountNumber)}
+                          </Typography>
+                          <Chip
+                            label={account.accountType}
+                            size="small"
+                            sx={{ 
+                              mt: 1,
+                              backgroundColor: `${getAccountColor(account.accountType)}20`,
+                              color: getAccountColor(account.accountType),
+                            }}
+                          />
+                        </Box>
+                      </Box>
+                      <Box textAlign="right">
+                        <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+                          {formatCurrency(account.balance)}
+                        </Typography>
+                        {account.availableBalance !== undefined && account.availableBalance !== account.balance && (
+                          <Typography variant="body2" color="text.secondary">
+                            Available: {formatCurrency(account.availableBalance)}
+                          </Typography>
+                        )}
+                        {account.interestRate > 0 && (
+                          <Chip
+                            label={`${account.interestRate}% APY`}
+                            size="small"
+                            color="success"
+                            sx={{ mt: 1 }}
+                          />
+                        )}
+                      </Box>
+                    </Box>
+
+                    <Divider sx={{ my: 2 }} />
+
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                      <Button
+                        size="small"
+                        startIcon={<History />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate('/transactions', { state: { accountId: account.accountId } });
+                        }}
+                      >
+                        View Transactions
+                      </Button>
+                      <Box display="flex" gap={1}>
+                        {account.status === 'active' && (
+                          <Chip
+                            icon={<CheckCircle />}
+                            label="Active"
+                            size="small"
+                            color="success"
+                            variant="outlined"
+                          />
+                        )}
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grow>
+            </Grid>
+          ))}
+        </Grid>
+
+        {/* Account Details Dialog */}
+        <Dialog open={showDetails} onClose={() => setShowDetails(false)} maxWidth="md" fullWidth>
           {selectedAccount && (
             <>
-              <Tabs value={tabValue} onChange={(e, v) => setTabValue(v)} sx={{ mb: 3 }}>
-                <Tab label="Account Information" />
-                <Tab label="Recent Transactions" />
-                <Tab label="Statements" />
-              </Tabs>
-
-              <TabPanel value={tabValue} index={0}>
+              <DialogTitle>
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Box
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: `${getAccountColor(selectedAccount.accountType)}20`,
+                      color: getAccountColor(selectedAccount.accountType),
+                    }}
+                  >
+                    {getAccountIcon(selectedAccount.accountType)}
+                  </Box>
+                  <Box>
+                    <Typography variant="h6">{selectedAccount.accountName}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Account Details
+                    </Typography>
+                  </Box>
+                </Box>
+              </DialogTitle>
+              <DialogContent>
                 <Grid container spacing={3}>
-                  <Grid item xs={12} md={6}>
-                    <Paper sx={{ p: 3 }}>
-                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                        Account Details
-                      </Typography>
-                      <List dense>
-                        <ListItem>
-                          <ListItemIcon>
-                            <Info />
-                          </ListItemIcon>
-                          <ListItemText 
-                            primary="Account Number"
-                            secondary={
-                              <Box display="flex" alignItems="center" gap={1}>
-                                <span>{selectedAccount.accountNumber}</span>
-                                <Tooltip title={copied === 'account' ? 'Copied!' : 'Copy'}>
-                                  <IconButton 
-                                    size="small"
-                                    onClick={() => handleCopyToClipboard(selectedAccount.accountNumber, 'account')}
-                                  >
-                                    {copied === 'account' ? <CheckCircle fontSize="small" /> : <ContentCopy fontSize="small" />}
-                                  </IconButton>
-                                </Tooltip>
-                              </Box>
-                            }
-                          />
-                        </ListItem>
-                        <ListItem>
-                          <ListItemIcon>
-                            <Info />
-                          </ListItemIcon>
-                          <ListItemText 
-                            primary="Routing Number"
-                            secondary={
-                              <Box display="flex" alignItems="center" gap={1}>
-                                <span>{selectedAccount.routingNumber || '021000021'}</span>
-                                <Tooltip title={copied === 'routing' ? 'Copied!' : 'Copy'}>
-                                  <IconButton 
-                                    size="small"
-                                    onClick={() => handleCopyToClipboard(selectedAccount.routingNumber || '021000021', 'routing')}
-                                  >
-                                    {copied === 'routing' ? <CheckCircle fontSize="small" /> : <ContentCopy fontSize="small" />}
-                                  </IconButton>
-                                </Tooltip>
-                              </Box>
-                            }
-                          />
-                        </ListItem>
-                        <ListItem>
-                          <ListItemIcon>
-                            <CalendarToday />
-                          </ListItemIcon>
-                          <ListItemText 
-                            primary="Account Opened"
-                            secondary={format(new Date(selectedAccount.openDate), 'MMMM dd, yyyy')}
-                          />
-                        </ListItem>
-                        <ListItem>
-                          <ListItemIcon>
-                            <CheckCircle color="success" />
-                          </ListItemIcon>
-                          <ListItemText 
-                            primary="Status"
-                            secondary={
-                              <Chip 
-                                label={selectedAccount.status.toUpperCase()} 
-                                size="small" 
-                                color="success"
-                              />
-                            }
-                          />
-                        </ListItem>
-                      </List>
-                    </Paper>
+                  <Grid item xs={12}>
+                    <Alert severity="info" icon={<Security />}>
+                      Your account information is protected with bank-grade encryption
+                    </Alert>
                   </Grid>
 
                   <Grid item xs={12} md={6}>
-                    <Paper sx={{ p: 3 }}>
-                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                        Balance Information
-                      </Typography>
-                      <List dense>
+                    <List>
+                      <ListItem>
+                        <ListItemIcon>
+                          <Info />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Account Number"
+                          secondary={
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <Typography variant="body2">
+                                {selectedAccount.accountNumber}
+                              </Typography>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleCopyToClipboard(selectedAccount.accountNumber, 'account')}
+                              >
+                                {copied === 'account' ? <CheckCircle color="success" /> : <ContentCopy />}
+                              </IconButton>
+                            </Box>
+                          }
+                        />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemIcon>
+                          <Info />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Routing Number"
+                          secondary={
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <Typography variant="body2">
+                                {selectedAccount.routingNumber || '121000248'}
+                              </Typography>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleCopyToClipboard(selectedAccount.routingNumber || '121000248', 'routing')}
+                              >
+                                {copied === 'routing' ? <CheckCircle color="success" /> : <ContentCopy />}
+                              </IconButton>
+                            </Box>
+                          }
+                        />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemIcon>
+                          <CalendarToday />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Account Age"
+                          secondary={calculateAccountAge(selectedAccount.openDate)}
+                        />
+                      </ListItem>
+                    </List>
+                  </Grid>
+
+                  <Grid item xs={12} md={6}>
+                    <List>
+                      <ListItem>
+                        <ListItemIcon>
+                          <AccountBalance />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Current Balance"
+                          secondary={formatCurrency(selectedAccount.balance)}
+                        />
+                      </ListItem>
+                      {selectedAccount.interestRate > 0 && (
                         <ListItem>
                           <ListItemIcon>
-                            <AttachMoney />
+                            <TrendingUp />
                           </ListItemIcon>
-                          <ListItemText 
-                            primary="Current Balance"
-                            secondary={formatCurrency(selectedAccount.balance)}
+                          <ListItemText
+                            primary="Interest Rate"
+                            secondary={`${selectedAccount.interestRate}% APY`}
                           />
                         </ListItem>
-                        {selectedAccount.availableBalance !== undefined && (
-                          <ListItem>
-                            <ListItemIcon>
-                              <AttachMoney />
-                            </ListItemIcon>
-                            <ListItemText 
-                              primary="Available Balance"
-                              secondary={formatCurrency(selectedAccount.availableBalance)}
-                            />
-                          </ListItem>
-                        )}
-                        {selectedAccount.creditLimit && (
-                          <ListItem>
-                            <ListItemIcon>
-                              <CreditCard />
-                            </ListItemIcon>
-                            <ListItemText 
-                              primary="Credit Limit"
-                              secondary={formatCurrency(selectedAccount.creditLimit)}
-                            />
-                          </ListItem>
-                        )}
-                        {selectedAccount.interestRate !== undefined && (
-                          <ListItem>
-                            <ListItemIcon>
-                              <TrendingUp />
-                            </ListItemIcon>
-                            <ListItemText 
-                              primary="Interest Rate"
-                              secondary={`${selectedAccount.interestRate}% ${selectedAccount.accountType === 'savings' ? 'APY' : 'APR'}`}
-                            />
-                          </ListItem>
-                        )}
-                      </List>
-                    </Paper>
+                      )}
+                      {selectedAccount.creditLimit && (
+                        <ListItem>
+                          <ListItemIcon>
+                            <CreditCard />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary="Credit Limit"
+                            secondary={formatCurrency(selectedAccount.creditLimit)}
+                          />
+                        </ListItem>
+                      )}
+                    </List>
                   </Grid>
 
                   <Grid item xs={12}>
-                    <Alert severity="info" icon={<Info />}>
-                      For security reasons, some account features can only be modified by visiting a branch or calling customer service.
-                    </Alert>
+                    <Typography variant="h6" gutterBottom>
+                      Recent Transactions
+                    </Typography>
+                    <TableContainer component={Paper} variant="outlined">
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Date</TableCell>
+                            <TableCell>Description</TableCell>
+                            <TableCell align="right">Amount</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {recentTransactions.length > 0 ? (
+                            recentTransactions.map((transaction) => (
+                              <TableRow key={transaction.transactionId}>
+                                <TableCell>
+                                  {format(new Date(transaction.date), 'MMM dd, yyyy')}
+                                </TableCell>
+                                <TableCell>{transaction.description}</TableCell>
+                                <TableCell align="right">
+                                  <Typography
+                                    color={transaction.type === 'credit' ? 'success.main' : 'inherit'}
+                                  >
+                                    {transaction.type === 'credit' ? '+' : '-'}
+                                    {formatCurrency(Math.abs(transaction.amount))}
+                                  </Typography>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          ) : (
+                            <TableRow>
+                              <TableCell colSpan={3} align="center">
+                                <Typography color="text.secondary" py={2}>
+                                  No recent transactions
+                                </Typography>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
                   </Grid>
                 </Grid>
-              </TabPanel>
-
-              <TabPanel value={tabValue} index={1}>
-                <TableContainer component={Paper}>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Date</TableCell>
-                        <TableCell>Description</TableCell>
-                        <TableCell>Category</TableCell>
-                        <TableCell align="right">Amount</TableCell>
-                        <TableCell align="right">Balance</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {accountTransactions.map((transaction) => (
-                        <TableRow key={transaction.transactionId}>
-                          <TableCell>
-                            {format(new Date(transaction.date), 'MMM dd, yyyy')}
-                          </TableCell>
-                          <TableCell>{transaction.description}</TableCell>
-                          <TableCell>
-                            <Chip 
-                              label={transaction.category} 
-                              size="small" 
-                              variant="outlined"
-                            />
-                          </TableCell>
-                          <TableCell align="right">
-                            <Box display="flex" alignItems="center" justifyContent="flex-end" gap={0.5}>
-                              {transaction.type === 'credit' ? (
-                                <TrendingUp fontSize="small" color="success" />
-                              ) : (
-                                <TrendingDown fontSize="small" color="error" />
-                              )}
-                              <Typography
-                                variant="body2"
-                                color={transaction.type === 'credit' ? 'success.main' : 'error.main'}
-                              >
-                                {transaction.type === 'credit' ? '+' : '-'}
-                                {formatCurrency(Math.abs(transaction.amount))}
-                              </Typography>
-                            </Box>
-                          </TableCell>
-                          <TableCell align="right">
-                            {formatCurrency(transaction.balance)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {accountTransactions.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
-                            <Typography color="text.secondary">
-                              No recent transactions
-                            </Typography>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-                <Box mt={2} display="flex" justifyContent="center">
-                  <Button 
-                    variant="text" 
-                    onClick={() => handleViewTransactions(selectedAccount)}
-                  >
-                    View All Transactions
-                  </Button>
-                </Box>
-              </TabPanel>
-
-              <TabPanel value={tabValue} index={2}>
-                <List>
-                  {['December 2023', 'November 2023', 'October 2023', 'September 2023'].map((month) => (
-                    <ListItem key={month}>
-                      <ListItemIcon>
-                        <Description />
-                      </ListItemIcon>
-                      <ListItemText 
-                        primary={`${month} Statement`}
-                        secondary="PDF • 2.3 MB"
-                      />
-                      <Box>
-                        <IconButton>
-                          <Download />
-                        </IconButton>
-                        <IconButton>
-                          <Print />
-                        </IconButton>
-                      </Box>
-                    </ListItem>
-                  ))}
-                </List>
-                <Alert severity="info" sx={{ mt: 2 }}>
-                  Statements are available for the past 24 months. For older statements, please contact customer service.
-                </Alert>
-              </TabPanel>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setShowDetails(false)}>Close</Button>
+                <Button
+                  variant="contained"
+                  startIcon={<History />}
+                  onClick={() => {
+                    navigate('/transactions', { state: { accountId: selectedAccount.accountId } });
+                  }}
+                >
+                  View All Transactions
+                </Button>
+              </DialogActions>
             </>
           )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDetailsDialog(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+        </Dialog>
+      </Box>
+    </Fade>
   );
 };
 

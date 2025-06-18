@@ -1,6 +1,8 @@
 import { Account, Transaction } from '../types';
 import accountsData from '../data/accounts.json';
 import transactionsData from '../data/transactions.json';
+import budgetsData from '../data/budgets.json';
+import stateService from './stateService';
 
 class AccountService {
   private accounts: Account[] = accountsData.accounts as Account[];
@@ -8,7 +10,23 @@ class AccountService {
 
   // Get accounts for a user
   getUserAccounts(userId: string): Account[] {
-    return this.accounts.filter(account => account.userId === userId);
+    // Initialize user state if not exists
+    const initialAccounts = this.accounts.filter(account => account.userId === userId);
+    const initialTransactions = this.transactions.filter(t => 
+      initialAccounts.some(a => a.accountId === t.accountId)
+    );
+    const initialBudgets = budgetsData.budgets.filter((b: any) => b.userId === userId);
+    
+    stateService.initializeUserState(userId, initialAccounts, initialTransactions, initialBudgets);
+    
+    // Get accounts from state
+    const state = stateService.getUserState(userId);
+    if (state && state.accounts) {
+      // Apply interest calculations for savings accounts
+      return state.accounts.map(account => stateService.getAccountWithInterest(account));
+    }
+    
+    return initialAccounts;
   }
 
   // Get account by ID
@@ -32,53 +50,19 @@ class AccountService {
 
   // Process transfer between accounts
   processTransfer(fromAccountId: string, toAccountId: string, amount: number, description: string = 'Transfer'): boolean {
+    // Get the user ID from the account
     const fromAccount = this.getAccount(fromAccountId);
-    const toAccount = this.getAccount(toAccountId);
-
-    if (!fromAccount || !toAccount) return false;
-    if (fromAccount.balance < amount) return false;
-
-    // Update balances
-    const newFromBalance = fromAccount.balance - amount;
-    const newToBalance = toAccount.balance + amount;
-
-    this.updateAccountBalance(fromAccountId, newFromBalance);
-    this.updateAccountBalance(toAccountId, newToBalance);
-
-    // Create transaction records
-    const timestamp = new Date().toISOString();
-    const transactionIdBase = `TRX${Date.now()}`;
-
-    // Debit transaction for source account
-    const debitTransaction: Transaction = {
-      transactionId: `${transactionIdBase}_1`,
-      accountId: fromAccountId,
-      date: timestamp,
-      description: `${description} to ${toAccount.accountName}`,
-      amount: -amount,
-      type: 'debit',
-      category: 'Transfer',
-      status: 'completed',
-      balance: newFromBalance
-    };
-
-    // Credit transaction for destination account
-    const creditTransaction: Transaction = {
-      transactionId: `${transactionIdBase}_2`,
-      accountId: toAccountId,
-      date: timestamp,
-      description: `${description} from ${fromAccount.accountName}`,
-      amount: amount,
-      type: 'credit',
-      category: 'Transfer',
-      status: 'completed',
-      balance: newToBalance
-    };
-
-    this.transactions.unshift(debitTransaction, creditTransaction);
-    this.saveToLocalStorage();
-
-    return true;
+    if (!fromAccount) return false;
+    
+    // Use state service for transaction processing
+    return stateService.processTransaction(
+      fromAccount.userId,
+      fromAccountId,
+      toAccountId,
+      amount,
+      description,
+      'Transfer'
+    );
   }
 
   // Get transactions for an account
@@ -88,6 +72,11 @@ class AccountService {
 
   // Get all transactions for a user
   getUserTransactions(userId: string): Transaction[] {
+    const state = stateService.getUserState(userId);
+    if (state && state.transactions) {
+      return state.transactions;
+    }
+    
     const userAccountIds = this.getUserAccounts(userId).map(acc => acc.accountId);
     return this.transactions.filter(t => userAccountIds.includes(t.accountId));
   }

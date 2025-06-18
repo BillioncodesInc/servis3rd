@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { CssBaseline } from '@mui/material';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import PrivateRoute from './components/PrivateRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -21,7 +22,8 @@ function App() {
     <ThemeProvider>
       <CssBaseline />
       <AuthProvider>
-        <Router>
+        <NotificationProvider>
+          <Router>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route
@@ -45,6 +47,7 @@ function App() {
             </Route>
           </Routes>
         </Router>
+        </NotificationProvider>
       </AuthProvider>
     </ThemeProvider>
   );

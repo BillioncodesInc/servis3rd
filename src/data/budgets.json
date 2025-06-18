@@ -5,7 +5,7 @@
       "userId": "USR001",
       "name": "Monthly Budget",
       "period": "monthly",
-      "startDate": "2024-01-01",
+      "startDate": "2025-01-01",
       "categories": [
         {
           "category": "Food & Dining",
@@ -52,7 +52,7 @@
       "userId": "USR002",
       "name": "Business Budget",
       "period": "monthly",
-      "startDate": "2024-01-01",
+      "startDate": "2025-01-01",
       "categories": [
         {
           "category": "Office Supplies",
@@ -93,7 +93,7 @@
       "userId": "USR003",
       "name": "Personal Budget",
       "period": "monthly",
-      "startDate": "2024-01-01",
+      "startDate": "2025-01-01",
       "categories": [
         {
           "category": "Food & Dining",
@@ -134,7 +134,7 @@
       "userId": "USR004",
       "name": "Monthly Budget",
       "period": "monthly",
-      "startDate": "2024-01-01",
+      "startDate": "2025-01-01",
       "categories": [
         {
           "category": "Food & Dining",

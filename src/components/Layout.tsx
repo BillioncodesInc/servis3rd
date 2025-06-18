@@ -39,6 +39,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import MobileNavigation from './MobileNavigation';
+import FloatingActions from './FloatingActions';
 
 const drawerWidth = 240;
 
@@ -230,6 +231,7 @@ const Layout: React.FC = () => {
         <Outlet />
       </Box>
       <MobileNavigation onMenuClick={handleDrawerToggle} />
+      <FloatingActions />
     </Box>
   );
 };

@@ -423,7 +423,7 @@ const Login: React.FC = () => {
 
         <Box textAlign="center" mt={3}>
           <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-            © 2024 Servis3rd Bank. All rights reserved.
+            © 2025 Servis3rd Bank. All rights reserved.
           </Typography>
         </Box>
       </Container>
